@@ -9,7 +9,7 @@ import uvicorn
 from app.common.config import settings
 from app.common.database import get_db, create_tables
 from app.common.logging import setup_logging, get_logger
-from app.routers import users, analysis, batch
+from app.routers import users, analysis, batch, feedback
 from app.core.scheduler import start_scheduler
 
 # Setup logging first
@@ -34,6 +34,7 @@ templates = Jinja2Templates(directory=settings.paths.templates)
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
 app.include_router(batch.router, prefix="/api/batch", tags=["batch"])
+app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
 
 
 @app.on_event("startup")

@@ -43,6 +43,14 @@ class PathSettings(BaseModel):
     templates: str = "templates"
 
 
+class PromptSettings(BaseModel):
+    """AI 프롬프트 설정"""
+    daily_learning_feedback: dict = {}
+    confusion_pattern_analysis: dict = {}
+    learning_progress_analysis: dict = {}
+    personalized_recommendations: dict = {}
+
+
 class Settings(BaseSettings):
     database: DatabaseSettings = DatabaseSettings()
     ollama: OllamaSettings = OllamaSettings()
@@ -50,6 +58,7 @@ class Settings(BaseSettings):
     logging: LoggingSettings = LoggingSettings()
     api: APISettings = APISettings()
     paths: PathSettings = PathSettings()
+    prompts: PromptSettings = PromptSettings()
 
     class Config:
         env_file = ".env"
@@ -59,13 +68,22 @@ class Settings(BaseSettings):
 
 def load_settings() -> Settings:
     config_path = Path("config/config.yaml")
+    prompts_path = Path("config/prompts.yaml")
     settings_dict = {}
 
+    # Load main config
     if config_path.exists():
         with open(config_path, 'r', encoding='utf-8') as f:
             config_data = yaml.safe_load(f)
             if config_data:
                 settings_dict.update(config_data)
+
+    # Load prompts config
+    if prompts_path.exists():
+        with open(prompts_path, 'r', encoding='utf-8') as f:
+            prompts_data = yaml.safe_load(f)
+            if prompts_data:
+                settings_dict['prompts'] = prompts_data
 
     settings = Settings(**settings_dict)
 
