@@ -4,7 +4,7 @@ from typing import List
 from pydantic import BaseModel
 
 from app.common.database import get_db
-from app.models.models import User
+from app.models.wowlingo_models import User
 from app.common.logging import get_logger
 
 logger = get_logger(__name__)

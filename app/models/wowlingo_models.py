@@ -186,6 +186,20 @@ class AIFeedback(Base):
     quest_attempts = relationship("UserQuestAttempt", back_populates="ai_feedback")
 
 
+class UserQuestProgress(Base):
+    """사용자 퀘스트 진행도"""
+    __tablename__ = "user_quest_progress"
+
+    user_quest_progress_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("user.user_id"), nullable=False)
+    quest_id = Column(Integer, ForeignKey("quests.quest_id"), nullable=False)
+    total_target_count = Column(Integer, nullable=False, comment="목표 문제 수")
+    pass_threshold = Column(Integer, nullable=False, comment="통과 기준")
+    correct_count = Column(Integer, nullable=False, default=0, comment="맞춘 문제 수")
+    done_yn = Column(Boolean, nullable=False, default=False, comment="완료 여부")
+    last_played_at = Column(TIMESTAMP, comment="마지막 플레이 시간")
+
+
 class Vocabulary(Base):
     """어휘"""
     __tablename__ = "vocabulary"

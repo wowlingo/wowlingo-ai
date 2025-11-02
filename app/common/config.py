@@ -12,6 +12,9 @@ class DatabaseSettings(BaseModel):
     username: str = "postgres"
     password: str = ""
 
+    class Config:
+        extra = "ignore"
+
 
 class OllamaSettings(BaseModel):
     base_url: str = "http://localhost:11434"
@@ -46,7 +49,6 @@ class PathSettings(BaseModel):
 class PromptSettings(BaseModel):
     """AI 프롬프트 설정"""
     daily_learning_feedback: dict = {}
-    confusion_pattern_analysis: dict = {}
     learning_progress_analysis: dict = {}
     personalized_recommendations: dict = {}
 
@@ -64,6 +66,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"
 
 
 def load_settings() -> Settings:

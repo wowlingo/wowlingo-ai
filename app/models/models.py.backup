@@ -16,7 +16,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
 
     # 유연한 사용자 메타데이터 (나이, 학습 레벨, 선호도 등)
-    metadata = Column(JSON, nullable=True)
+    user_metadata = Column(JSON, nullable=True)
 
     # Relationships
     answers = relationship("UserAnswer", back_populates="user")
@@ -45,7 +45,7 @@ class Question(Base):
     is_active = Column(Boolean, default=True)
 
     # 추가 메타데이터 (오디오 파일 경로, 난이도 등)
-    metadata = Column(JSON, nullable=True)
+    question_metadata = Column(JSON, nullable=True)
 
     # Relationships
     answers = relationship("UserAnswer", back_populates="question")
@@ -78,7 +78,7 @@ class UserAnswer(Base):
     session_id = Column(String(100), nullable=True)
 
     # 추가 메타데이터
-    metadata = Column(JSON, nullable=True)
+    answer_metadata = Column(JSON, nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="answers")

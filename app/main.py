@@ -9,8 +9,10 @@ import uvicorn
 from app.common.config import settings
 from app.common.database import get_db, create_tables
 from app.common.logging import setup_logging, get_logger
-from app.routers import users, analysis, batch, feedback
-from app.core.scheduler import start_scheduler
+# Disabled routers and scheduler that depend on models.py
+# from app.routers import users, analysis, batch
+# from app.core.scheduler import start_scheduler
+from app.routers import feedback
 
 # Setup logging first
 setup_logging()
@@ -31,9 +33,10 @@ app.mount("/static", StaticFiles(directory=settings.paths.static), name="static"
 templates = Jinja2Templates(directory=settings.paths.templates)
 
 # Include routers
-app.include_router(users.router, prefix="/api/users", tags=["users"])
-app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
-app.include_router(batch.router, prefix="/api/batch", tags=["batch"])
+# Disabled routers that depend on models.py
+# app.include_router(users.router, prefix="/api/users", tags=["users"])
+# app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
+# app.include_router(batch.router, prefix="/api/batch", tags=["batch"])
 app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
 
 
@@ -42,20 +45,23 @@ async def startup_event():
     """Application startup event"""
     logger.info("Starting Onsori WOW Analysis System")
 
-    # Create database tables if they don't exist (for development)
-    try:
-        create_tables()
-        logger.info("Database tables checked/created successfully")
-    except Exception as e:
-        logger.error(f"Failed to create database tables: {e}")
-        raise
+    # Skip creating tables - using existing wowlingo database
+    # try:
+    #     create_tables()
+    #     logger.info("Database tables checked/created successfully")
+    # except Exception as e:
+    #     logger.error(f"Failed to create database tables: {e}")
+    #     raise
+    logger.info("Using existing wowlingo database tables")
 
     # Start batch scheduler
-    try:
-        start_scheduler()
-        logger.info("Batch scheduler started successfully")
-    except Exception as e:
-        logger.error(f"Failed to start batch scheduler: {e}")
+    # Disabled: depends on models.py
+    # try:
+    #     start_scheduler()
+    #     logger.info("Batch scheduler started successfully")
+    # except Exception as e:
+    #     logger.error(f"Failed to start batch scheduler: {e}")
+    logger.info("Batch scheduler disabled")
 
 
 @app.on_event("shutdown")

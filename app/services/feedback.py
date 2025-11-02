@@ -64,15 +64,41 @@ def generate_daily_feedback(user_id: int, target_date: date, db: Session) -> Opt
         UserQuest.done_yn == True
     ).count()
 
-    # 5. 성장 단계 판단 (옵션3: 완료한 퀘스트 개수 기준)
-    if total_completed_quests <= 3:
-        growth_stage = "씨앗"
-    elif total_completed_quests <= 7:
-        growth_stage = "새싹"
-    elif total_completed_quests <= 15:
-        growth_stage = "줄기"
+    # 5. 현재 스테이지 진행도 조회 (user_quest_progress)
+    from app.models.wowlingo_models import UserQuestProgress, Quest
+
+    # done_yn=0 중에서 Quest.order가 가장 작은 것 찾기 (현재 진행 중인 스테이지)
+    # 주의: quest_id가 아니라 Quest.order 기준!
+    current_progress = db.query(UserQuestProgress).join(
+        Quest, UserQuestProgress.quest_id == Quest.quest_id
+    ).filter(
+        UserQuestProgress.user_id == user_id,
+        UserQuestProgress.done_yn == False
+    ).order_by(
+        Quest.order.asc(),
+        UserQuestProgress.quest_id.asc()
+    ).first()
+
+    # 6. 성장 단계 판단 (스테이지 = 성장 단계)
+    # Quest.order에 따라 성장 단계 매핑
+    if current_progress:
+        current_quest = db.query(Quest).filter(
+            Quest.quest_id == current_progress.quest_id
+        ).first()
+        stage_order = current_quest.order if current_quest else 1
     else:
-        growth_stage = "꽃"
+        # 진행도가 없으면 기본값
+        stage_order = 1
+
+    # 스테이지 순서에 따른 성장 단계 매핑
+    if stage_order == 1:
+        growth_stage = "씨앗"
+    elif 2 <= stage_order <= 4:
+        growth_stage = "새싹"
+    elif 5 <= stage_order <= 7:
+        growth_stage = "성장한 식물"
+    else:  # 8 이상
+        growth_stage = "열매"
 
     # 6. 가장 잘한 카테고리 찾기 (hashtag 기준)
     best_category, best_accuracy = find_best_category(user_quests, db)
@@ -204,13 +230,20 @@ def save_feedback_to_db(
         db.add(attempt)
         db.flush()  # ID 생성
 
-    # AI 피드백 저장
+    # AI 피드백을 하나의 문자열로 합치기 (\n으로 구분)
+    feedback_message = "\n".join([
+        feedback.get('summary', ''),
+        feedback.get('praise', ''),
+        feedback.get('motivation', '')
+    ])
+
+    # AI 피드백 저장 (message에만 저장, detail과 tags는 비움)
     ai_feedback = AIFeedback(
         user_quest_attempt_id=attempt.user_quest_attempt_id,
         created_at=datetime.now(),
-        message=feedback.get('summary', ''),
-        detail=feedback.get('praise', ''),
-        tags=feedback.get('motivation', '')
+        message=feedback_message,
+        detail=None,
+        tags=None
     )
 
     db.add(ai_feedback)

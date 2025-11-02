@@ -127,10 +127,16 @@ async def get_latest_feedback(
             detail=f"No feedback found for user {user_id}"
         )
 
+    # message를 \n으로 분리 (summary, praise, motivation)
+    feedback_parts = (latest_feedback.message or "").split("\n")
+    summary = feedback_parts[0] if len(feedback_parts) > 0 else ""
+    praise = feedback_parts[1] if len(feedback_parts) > 1 else ""
+    motivation = feedback_parts[2] if len(feedback_parts) > 2 else ""
+
     return FeedbackResponse(
-        summary=latest_feedback.message or "",
-        praise=latest_feedback.detail or "",
-        motivation=latest_feedback.tags or "",
+        summary=summary,
+        praise=praise,
+        motivation=motivation,
         ai_feedback_id=latest_feedback.ai_feedback_id
     )
 
@@ -181,9 +187,15 @@ async def get_feedback_by_date(
             detail=f"No feedback found for user {user_id} on {target_date}"
         )
 
+    # message를 \n으로 분리 (summary, praise, motivation)
+    feedback_parts = (feedback.message or "").split("\n")
+    summary = feedback_parts[0] if len(feedback_parts) > 0 else ""
+    praise = feedback_parts[1] if len(feedback_parts) > 1 else ""
+    motivation = feedback_parts[2] if len(feedback_parts) > 2 else ""
+
     return FeedbackResponse(
-        summary=feedback.message or "",
-        praise=feedback.detail or "",
-        motivation=feedback.tags or "",
+        summary=summary,
+        praise=praise,
+        motivation=motivation,
         ai_feedback_id=feedback.ai_feedback_id
     )

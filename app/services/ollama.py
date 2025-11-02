@@ -33,43 +33,6 @@ class OllamaClient:
             logger.error(f"Ollama API request failed: {e}")
             return None
 
-    def analyze_confusion_patterns(self, user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Analyze user confusion patterns using Ollama"""
-
-        # Get prompt template from settings
-        prompt_config = settings.prompts.confusion_pattern_analysis
-        system_prompt = prompt_config.get('system_prompt', '')
-        user_template = prompt_config.get('user_prompt_template', '')
-
-        # Format user prompt with actual data
-        prompt = system_prompt + "\n\n" + user_template.format(
-            total_questions=user_data.get('total_questions', 0),
-            accuracy=f"{user_data.get('accuracy', 0):.1%}",
-            confusion_patterns=json.dumps(user_data.get('confusion_patterns', {}), ensure_ascii=False, indent=2),
-            phonetic_confusions=json.dumps(user_data.get('phonetic_confusions', {}), ensure_ascii=False, indent=2)
-        )
-
-        data = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json"
-        }
-
-        logger.info(f"Requesting confusion pattern analysis for user data")
-        response = self._make_request("/api/generate", data)
-
-        if response and "response" in response:
-            try:
-                analysis_result = json.loads(response["response"])
-                logger.info("Successfully analyzed confusion patterns")
-                return analysis_result
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse Ollama response as JSON: {e}")
-                return None
-
-        return None
-
     def analyze_learning_progress(self, progress_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Analyze learning progress over time"""
 
