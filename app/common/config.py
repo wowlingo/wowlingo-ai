@@ -70,10 +70,16 @@ def load_settings() -> Settings:
     settings = Settings(**settings_dict)
 
     # Override with environment variables
-    if os.getenv('DATABASE_PASSWORD'):
-        settings.database.password = os.getenv('DATABASE_PASSWORD')
     if os.getenv('DATABASE_HOST'):
         settings.database.host = os.getenv('DATABASE_HOST')
+    if os.getenv('DATABASE_PORT'):
+        settings.database.port = int(os.getenv('DATABASE_PORT'))
+    if os.getenv('DATABASE_NAME'):
+        settings.database.database = os.getenv('DATABASE_NAME')
+    if os.getenv('DATABASE_USERNAME'):
+        settings.database.username = os.getenv('DATABASE_USERNAME')
+    if os.getenv('DATABASE_PASSWORD'):
+        settings.database.password = os.getenv('DATABASE_PASSWORD')
     if os.getenv('OLLAMA_BASE_URL'):
         settings.ollama.base_url = os.getenv('OLLAMA_BASE_URL')
 

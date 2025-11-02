@@ -3,9 +3,9 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 
-from app.models import User, UserAnswer, AnalysisResult, Question
-from app.ollama_client import ollama_client
-from app.logging_config import get_logger
+from app.models.models import User, UserAnswer, AnalysisResult, Question
+from app.services.ollama import ollama_client
+from app.common.logging import get_logger
 
 logger = get_logger(__name__)
 

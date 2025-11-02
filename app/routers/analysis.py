@@ -5,9 +5,9 @@ from typing import List, Dict, Any
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 
-from app.database import get_db
-from app.models import User, UserAnswer, AnalysisResult, Question
-from app.logging_config import get_logger
+from app.common.database import get_db
+from app.models.models import User, UserAnswer, AnalysisResult, Question
+from app.common.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()

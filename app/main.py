@@ -6,11 +6,11 @@ from fastapi import Request
 from sqlalchemy.orm import Session
 import uvicorn
 
-from app.config import settings
-from app.database import get_db, create_tables
-from app.logging_config import setup_logging, get_logger
+from app.common.config import settings
+from app.common.database import get_db, create_tables
+from app.common.logging import setup_logging, get_logger
 from app.routers import users, analysis, batch
-from app.batch_scheduler import start_scheduler
+from app.core.scheduler import start_scheduler
 
 # Setup logging first
 setup_logging()

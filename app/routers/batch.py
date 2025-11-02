@@ -4,10 +4,10 @@ from typing import List
 from datetime import datetime
 from pydantic import BaseModel
 
-from app.database import get_db
-from app.models import BatchJob
-from app.logging_config import get_logger
-from app.batch_processor import run_analysis_batch
+from app.common.database import get_db
+from app.models.models import BatchJob
+from app.common.logging import get_logger
+from app.core.analysis import run_analysis_batch
 
 logger = get_logger(__name__)
 router = APIRouter()
