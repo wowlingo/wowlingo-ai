@@ -51,8 +51,8 @@ def generate_daily_feedback(user_id: int, target_date: date, db: Session) -> Opt
     total_correct = sum(uq.correct_quest_item_count for uq in user_quests)
     accuracy = round((total_correct / total_questions * 100) if total_questions > 0 else 0, 1)
 
-    # 2. 완료한 퀘스트 수 (오늘)
-    completed_quests = sum(1 for uq in user_quests if uq.done_yn)
+    # 2. 완료한 퀘스트 수 (오늘) - ended_at이 NULL이 아닌 것이 완료된 퀘스트
+    completed_quests = sum(1 for uq in user_quests if uq.ended_at is not None)
 
     # 3. 푼 퀘스트 종류 수 (오늘, distinct quest_id)
     quest_ids = {uq.quest_id for uq in user_quests}
@@ -61,7 +61,7 @@ def generate_daily_feedback(user_id: int, target_date: date, db: Session) -> Opt
     # 4. 누적 완료 퀘스트 수 (전체 기간)
     total_completed_quests = db.query(UserQuest).filter(
         UserQuest.user_id == user_id,
-        UserQuest.done_yn == True
+        UserQuest.ended_at != None
     ).count()
 
     # 5. 현재 스테이지 진행도 조회 (user_quest_progress)
@@ -231,8 +231,8 @@ def save_feedback_to_db(
         db.flush()  # ID 생성
 
     # AI 피드백을 하나의 문자열로 합치기 (\n으로 구분)
+    feedback_title = feedback.get('summary', '')
     feedback_message = "\n".join([
-        feedback.get('summary', ''),
         feedback.get('praise', ''),
         feedback.get('motivation', '')
     ])
@@ -241,8 +241,8 @@ def save_feedback_to_db(
     ai_feedback = AIFeedback(
         user_quest_attempt_id=attempt.user_quest_attempt_id,
         created_at=datetime.now(),
+        title=feedback_title,
         message=feedback_message,
-        detail=None,
         tags=None
     )
 

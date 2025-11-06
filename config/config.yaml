@@ -1,32 +1,33 @@
 database:
-  host: localhost
-  port: 5432
-  database: onsori_analysis
-  username: postgres
+    host: ${DATABASE_HOST}
+    port: ${DATABASE_PORT}
+    database: ${DATABASE_NAME}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
 
 ollama:
-  base_url: http://localhost:11434
-  model: gemma
-  timeout: 30
+    base_url: http://localhost:11434
+    model: gemma
+    timeout: 30
 
 batch:
-  schedule:
-    hour: 0
-    minute: 0
-  timezone: Asia/Seoul
+    schedule:
+        hour: 0
+        minute: 0
+    timezone: Asia/Seoul
 
 logging:
-  level: INFO
-  file: logs/app.log
-  max_file_size: 10MB
-  backup_count: 5
-  rotation: daily
+    level: INFO
+    file: logs/app.log
+    max_file_size: 10MB
+    backup_count: 5
+    rotation: daily
 
 api:
-  host: 0.0.0.0
-  port: 8000
-  debug: false
+    host: 0.0.0.0
+    port: 8000
+    debug: false
 
 paths:
-  static: static
-  templates: templates
+    static: static
+    templates: templates

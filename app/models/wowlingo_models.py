@@ -28,10 +28,6 @@ class Quest(Base):
     order = Column(SmallInteger, nullable=False, default=0, comment="순서")
     title = Column(String(100), nullable=False, comment="문제집 타이틀")
     type = Column(String(100), nullable=False, comment="문제집 타입")
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
-    created_by = Column(String(50))
-    updated_by = Column(String(50))
 
     # Relationships
     quest_items = relationship("QuestItem", back_populates="quest")
@@ -81,11 +77,9 @@ class UserQuest(Base):
     user_quest_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("user.user_id"), nullable=False)
     quest_id = Column(BigInteger, ForeignKey("quests.quest_id"), nullable=False)
-    done_yn = Column(Boolean, nullable=False, default=False)
     started_at = Column(DateTime, nullable=False)
     ended_at = Column(DateTime)
     time_spent = Column(Integer)
-    progress_rate = Column(SmallInteger, nullable=False, default=0, comment="진행률")
     total_quest_item_count = Column(Integer, nullable=False)
     correct_quest_item_count = Column(Integer, default=0)
     accuracy_rate = Column(DECIMAL(5, 2), nullable=False, default=0.00)
@@ -167,7 +161,7 @@ class UserQuestAttempt(Base):
 
     # Relationships
     user = relationship("User", back_populates="quest_attempts")
-    ai_feedback = relationship("AIFeedback", back_populates="quest_attempts")
+    ai_feedbacks = relationship("AIFeedback", back_populates="quest_attempt", foreign_keys="[AIFeedback.user_quest_attempt_id]")
 
 
 class AIFeedback(Base):
@@ -178,12 +172,12 @@ class AIFeedback(Base):
     user_quest_attempt_id = Column(BigInteger, ForeignKey("user_quest_attempts.user_quest_attempt_id"),
                                     nullable=False, comment="사용자 문제 이력 달력 id")
     created_at = Column(TIMESTAMP, comment="AI 생성 날짜")
-    message = Column(String(100), comment="학습 요약 메시지")
-    detail = Column(String(500), comment="칭찬 메시지")
-    tags = Column(String(500), comment="동기부여 메시지")
+    title = Column(String(100), comment="학습 요약")
+    message = Column(String(500), comment="칭찬 문장, 동기부여")
+    tags = Column(String(500), comment="해시태그")
 
     # Relationships
-    quest_attempts = relationship("UserQuestAttempt", back_populates="ai_feedback")
+    quest_attempt = relationship("UserQuestAttempt", back_populates="ai_feedbacks", foreign_keys=[user_quest_attempt_id])
 
 
 class UserQuestProgress(Base):
