@@ -1,6 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 from sqlalchemy.orm import sessionmaker
 
@@ -155,11 +155,11 @@ def add_one_time_job(job_type: str, delay_seconds: int = 0):
     else:
         raise ValueError(f"Unknown job type: {job_type}")
 
-    run_date = datetime.now().replace(microsecond=0)
+    run_date = datetime.now(timezone.utc).replace(microsecond=0)
     if delay_seconds > 0:
         run_date = run_date.replace(second=run_date.second + delay_seconds)
 
-    job_id = f"{job_type}_onetime_{int(datetime.now().timestamp())}"
+    job_id = f"{job_type}_onetime_{int(datetime.now(timezone.utc).timestamp())}"
 
     scheduler.add_job(
         job_func,

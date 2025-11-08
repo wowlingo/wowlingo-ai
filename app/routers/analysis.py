@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel
 
 from app.common.database import get_db
@@ -32,7 +32,7 @@ async def get_user_accuracy(user_id: int, days: int = 30, db: Session = Depends(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Calculate date range
-    end_date = datetime.now()
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
 
     # Query user answers in the date range
@@ -95,7 +95,7 @@ async def get_confusion_patterns(user_id: int, days: int = 30, db: Session = Dep
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    end_date = datetime.now()
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
 
     # Get wrong answers with question details
@@ -182,7 +182,7 @@ async def get_user_report(user_id: int, days: int = 30, db: Session = Depends(ge
         "user_id": user_id,
         "username": user.username,
         "analysis_period": f"{days}일",
-        "generated_at": datetime.now().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "summary": {
             "total_questions": accuracy_data["total_questions"],
             "overall_accuracy": accuracy_data["accuracy"],

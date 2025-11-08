@@ -24,7 +24,7 @@ class OllamaSettings(BaseModel):
 
 class BatchSettings(BaseModel):
     schedule: dict = {"hour": 0, "minute": 0}
-    timezone: str = "Asia/Seoul"
+    timezone: str = "UTC"
 
 
 class LoggingSettings(BaseModel):

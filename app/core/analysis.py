@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List
 
 from app.models.models import User, UserAnswer, AnalysisResult, Question
@@ -29,7 +29,7 @@ async def run_daily_analysis(db: Session) -> Dict[str, Any]:
     logger.info("Starting daily analysis batch job")
 
     # Get users who answered questions in the last 24 hours
-    yesterday = datetime.now() - timedelta(days=1)
+    yesterday = datetime.now(timezone.utc) - timedelta(days=1)
     active_users = db.query(User.id).join(UserAnswer).filter(
         UserAnswer.answered_at >= yesterday
     ).distinct().all()
@@ -50,8 +50,8 @@ async def run_daily_analysis(db: Session) -> Dict[str, Any]:
                     user_id=user_id,
                     analysis_type="daily_analysis",
                     result_data=analysis_result,
-                    analysis_period_start=datetime.now() - timedelta(days=7),
-                    analysis_period_end=datetime.now()
+                    analysis_period_start=datetime.now(timezone.utc) - timedelta(days=7),
+                    analysis_period_end=datetime.now(timezone.utc)
                 )
                 db.add(db_result)
                 processed_count += 1
@@ -104,8 +104,8 @@ async def run_weekly_report(db: Session) -> Dict[str, Any]:
                     user_id=user.id,
                     analysis_type="weekly_report",
                     result_data=report_data,
-                    analysis_period_start=datetime.now() - timedelta(days=30),
-                    analysis_period_end=datetime.now()
+                    analysis_period_start=datetime.now(timezone.utc) - timedelta(days=30),
+                    analysis_period_end=datetime.now(timezone.utc)
                 )
                 db.add(db_result)
                 processed_count += 1
@@ -144,7 +144,7 @@ async def run_monthly_summary(db: Session) -> Dict[str, Any]:
     logger.info("Starting monthly summary batch job")
 
     # Calculate system-wide statistics for the last 30 days
-    end_date = datetime.now()
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=30)
 
     # Total questions answered
@@ -190,7 +190,7 @@ async def run_monthly_summary(db: Session) -> Dict[str, Any]:
         "overall_accuracy": round(overall_accuracy, 3),
         "active_users": active_users_count,
         "category_performance": category_stats,
-        "generated_at": datetime.now().isoformat()
+        "generated_at": datetime.now(timezone.utc).isoformat()
     }
 
     # Save summary
@@ -217,7 +217,7 @@ async def analyze_user_performance(user_id: int, days: int, db: Session) -> Dict
     """Analyze individual user performance using Ollama"""
 
     # Get user data
-    end_date = datetime.now()
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
 
     answers = db.query(UserAnswer).filter(
@@ -264,14 +264,14 @@ async def analyze_user_performance(user_id: int, days: int, db: Session) -> Dict
         return {
             "basic_stats": user_data,
             "ai_insights": ai_analysis,
-            "analysis_date": datetime.now().isoformat()
+            "analysis_date": datetime.now(timezone.utc).isoformat()
         }
     else:
         # Fallback to basic analysis if Ollama is not available
         return {
             "basic_stats": user_data,
             "message": "AI analysis not available",
-            "analysis_date": datetime.now().isoformat()
+            "analysis_date": datetime.now(timezone.utc).isoformat()
         }
 
 
@@ -305,7 +305,7 @@ async def generate_comprehensive_report(user_id: int, days: int, db: Session) ->
         "performance": performance_data,
         "progress": progress_data,
         "ai_recommendations": ai_recommendations or {},
-        "generated_at": datetime.now().isoformat()
+        "generated_at": datetime.now(timezone.utc).isoformat()
     }
 
 
@@ -316,7 +316,7 @@ def calculate_learning_progress(user_id: int, days: int, db: Session) -> Dict[st
     progress_data = {}
 
     for period in periods:
-        end_date = datetime.now()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=period)
 
         answers = db.query(UserAnswer).filter(
