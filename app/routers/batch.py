@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel
 
 from app.common.database import get_db
@@ -62,7 +62,7 @@ async def trigger_batch_job(job_type: str, db: Session = Depends(get_db)):
 
         # Update job status
         batch_job.status = "completed"
-        batch_job.completed_at = datetime.now()
+        batch_job.completed_at = datetime.now(timezone.utc)
         batch_job.processed_count = result.get("processed_count", 0)
         batch_job.result_data = result
 
@@ -78,7 +78,7 @@ async def trigger_batch_job(job_type: str, db: Session = Depends(get_db)):
     except Exception as e:
         # Update job status with error
         batch_job.status = "failed"
-        batch_job.completed_at = datetime.now()
+        batch_job.completed_at = datetime.now(timezone.utc)
         batch_job.error_message = str(e)
         batch_job.error_count = 1
 

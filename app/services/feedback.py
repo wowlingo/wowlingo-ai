@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 from app.common.config import settings
 from app.common.logging import get_logger
@@ -224,8 +224,8 @@ def save_feedback_to_db(
         # 새로운 attempt 생성
         attempt = UserQuestAttempt(
             user_id=user_id,
-            login_date=datetime.now(),
-            attempt_date=datetime.combine(target_date, datetime.now().time())
+            login_date=datetime.now(timezone.utc),
+            attempt_date=datetime.combine(target_date, datetime.now(timezone.utc).time())
         )
         db.add(attempt)
         db.flush()  # ID 생성
@@ -240,7 +240,7 @@ def save_feedback_to_db(
     # AI 피드백 저장 (message에만 저장, detail과 tags는 비움)
     ai_feedback = AIFeedback(
         user_quest_attempt_id=attempt.user_quest_attempt_id,
-        created_at=datetime.now(),
+        created_at=datetime.now(timezone.utc),
         title=feedback_title,
         message=feedback_message,
         tags=None

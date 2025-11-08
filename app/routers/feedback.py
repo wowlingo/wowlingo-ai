@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from pydantic import BaseModel
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional, List
 
 from app.common.database import get_db
