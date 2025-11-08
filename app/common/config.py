@@ -1,8 +1,10 @@
 import os
+import re
 import yaml
 from pathlib import Path
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
 
 
 class DatabaseSettings(BaseModel):
@@ -69,40 +71,67 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 
+def expand_env_vars(config_str: str) -> str:
+    """
+    Expand environment variables in config string.
+    Supports ${VAR_NAME} and ${VAR_NAME:default_value} syntax.
+    """
+    def replace_var(match):
+        var_expr = match.group(1)
+        # Check for default value syntax: ${VAR:default}
+        if ':' in var_expr:
+            var_name, default_value = var_expr.split(':', 1)
+            return os.getenv(var_name.strip(), default_value.strip())
+        else:
+            # Return environment variable or keep placeholder if not found
+            return os.getenv(var_expr.strip(), match.group(0))
+
+    # Replace ${VAR_NAME} or ${VAR_NAME:default}
+    return re.sub(r'\$\{([^}]+)\}', replace_var, config_str)
+
+
 def load_settings() -> Settings:
+    """
+    Load settings from config files and environment variables.
+
+    Loading order:
+    1. Load .env file (if exists)
+    2. Load config.yaml with environment variable expansion
+    3. Load prompts.yaml
+    """
+    # Load environment variables from .env file
+    # This will load .env if it exists, or .env.example as fallback
+    env_file = Path(".env")
+    if not env_file.exists():
+        env_file = Path(".env.example")
+
+    if env_file.exists():
+        load_dotenv(env_file)
+
     config_path = Path("config/config.yaml")
     prompts_path = Path("config/prompts.yaml")
     settings_dict = {}
 
-    # Load main config
+    # Load main config with environment variable expansion
     if config_path.exists():
         with open(config_path, 'r', encoding='utf-8') as f:
-            config_data = yaml.safe_load(f)
+            config_content = f.read()
+            # Expand environment variables in the config content
+            expanded_content = expand_env_vars(config_content)
+            config_data = yaml.safe_load(expanded_content)
             if config_data:
                 settings_dict.update(config_data)
 
     # Load prompts config
     if prompts_path.exists():
         with open(prompts_path, 'r', encoding='utf-8') as f:
-            prompts_data = yaml.safe_load(f)
+            prompts_content = f.read()
+            expanded_prompts = expand_env_vars(prompts_content)
+            prompts_data = yaml.safe_load(expanded_prompts)
             if prompts_data:
                 settings_dict['prompts'] = prompts_data
 
     settings = Settings(**settings_dict)
-
-    # Override with environment variables
-    if os.getenv('DATABASE_HOST'):
-        settings.database.host = os.getenv('DATABASE_HOST')
-    if os.getenv('DATABASE_PORT'):
-        settings.database.port = int(os.getenv('DATABASE_PORT'))
-    if os.getenv('DATABASE_NAME'):
-        settings.database.database = os.getenv('DATABASE_NAME')
-    if os.getenv('DATABASE_USERNAME'):
-        settings.database.username = os.getenv('DATABASE_USERNAME')
-    if os.getenv('DATABASE_PASSWORD'):
-        settings.database.password = os.getenv('DATABASE_PASSWORD')
-    if os.getenv('OLLAMA_BASE_URL'):
-        settings.ollama.base_url = os.getenv('OLLAMA_BASE_URL')
 
     return settings
 
