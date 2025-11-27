@@ -39,8 +39,8 @@ class BatchSettings(BaseModel):
     # 데일리 AI 피드백 생성 스케줄
     daily_feedback: ScheduleJobSettings = ScheduleJobSettings(
         enabled=True,
-        hour=22,  # 오후 10시
-        minute=0
+        hour=23,  # 밤 11시 50분
+        minute=50
     )
     
     # 기존 분석 스케줄 (필요시 사용)

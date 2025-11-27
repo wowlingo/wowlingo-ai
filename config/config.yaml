@@ -14,11 +14,11 @@ batch:
     # 기본 타임존 설정 (한국 시간)
     timezone: Asia/Seoul
     
-    # 데일리 AI 피드백 생성 (매일 오후 10시)
+    # 데일리 AI 피드백 생성 (매일 밤 11시 50분)
     daily_feedback:
         enabled: true
-        hour: 22
-        minute: 0
+        hour: 23
+        minute: 50
     
     # 기존 분석 작업들 (필요시 활성화)
     daily_analysis:
