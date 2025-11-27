@@ -24,9 +24,43 @@ class OllamaSettings(BaseModel):
     timeout: int = 30
 
 
+class ScheduleJobSettings(BaseModel):
+    """개별 스케줄 잡 설정"""
+    enabled: bool = True
+    hour: int = 0
+    minute: int = 0
+    day: int = None  # 월별 실행 시 사용
+    day_of_week: int = None  # 주별 실행 시 사용 (0=Monday, 6=Sunday)
+
+
 class BatchSettings(BaseModel):
-    schedule: dict = {"hour": 0, "minute": 0}
-    timezone: str = "UTC"
+    timezone: str = "Asia/Seoul"  # 한국 시간대 기본 설정
+    
+    # 데일리 AI 피드백 생성 스케줄
+    daily_feedback: ScheduleJobSettings = ScheduleJobSettings(
+        enabled=True,
+        hour=22,  # 오후 10시
+        minute=0
+    )
+    
+    # 기존 분석 스케줄 (필요시 사용)
+    daily_analysis: ScheduleJobSettings = ScheduleJobSettings(
+        enabled=False,
+        hour=0,
+        minute=0
+    )
+    weekly_report: ScheduleJobSettings = ScheduleJobSettings(
+        enabled=False,
+        day_of_week=6,  # Sunday
+        hour=1,
+        minute=0
+    )
+    monthly_summary: ScheduleJobSettings = ScheduleJobSettings(
+        enabled=False,
+        day=1,  # 1st day of month
+        hour=2,
+        minute=0
+    )
 
 
 class LoggingSettings(BaseModel):

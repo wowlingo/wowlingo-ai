@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.common.config import settings
 from app.common.database import engine
-from app.core.analysis import run_analysis_batch
+from app.core.feedback_generator import generate_daily_feedbacks
 from app.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -16,50 +16,40 @@ scheduler = None
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-async def scheduled_daily_analysis():
-    """Scheduled daily analysis job"""
-    logger.info("Starting scheduled daily analysis")
+async def scheduled_daily_feedback():
+    """Scheduled daily AI feedback generation for users"""
+    logger.info("Starting scheduled daily AI feedback generation")
 
     db = SessionLocal()
     try:
-        result = await run_analysis_batch("daily_analysis", db)
-        logger.info(f"Scheduled daily analysis completed: {result}")
+        result = await generate_daily_feedbacks(db)
+        logger.info(f"Daily feedback generation completed: {result}")
     except Exception as e:
-        logger.error(f"Scheduled daily analysis failed: {e}")
+        logger.error(f"Daily feedback generation failed: {e}")
     finally:
         db.close()
+
+
+async def scheduled_daily_analysis():
+    """Scheduled daily analysis job (placeholder)"""
+    logger.info("Daily analysis job - currently disabled")
+    return {"status": "skipped", "reason": "Not implemented"}
 
 
 async def scheduled_weekly_report():
-    """Scheduled weekly report job"""
-    logger.info("Starting scheduled weekly report")
-
-    db = SessionLocal()
-    try:
-        result = await run_analysis_batch("weekly_report", db)
-        logger.info(f"Scheduled weekly report completed: {result}")
-    except Exception as e:
-        logger.error(f"Scheduled weekly report failed: {e}")
-    finally:
-        db.close()
+    """Scheduled weekly report job (placeholder)"""
+    logger.info("Weekly report job - currently disabled")
+    return {"status": "skipped", "reason": "Not implemented"}
 
 
 async def scheduled_monthly_summary():
-    """Scheduled monthly summary job"""
-    logger.info("Starting scheduled monthly summary")
-
-    db = SessionLocal()
-    try:
-        result = await run_analysis_batch("monthly_summary", db)
-        logger.info(f"Scheduled monthly summary completed: {result}")
-    except Exception as e:
-        logger.error(f"Scheduled monthly summary failed: {e}")
-    finally:
-        db.close()
+    """Scheduled monthly summary job (placeholder)"""
+    logger.info("Monthly summary job - currently disabled")
+    return {"status": "skipped", "reason": "Not implemented"}
 
 
 def start_scheduler():
-    """Start the batch job scheduler"""
+    """Start the batch job scheduler with config-driven settings"""
     global scheduler
 
     if scheduler is not None:
@@ -67,42 +57,72 @@ def start_scheduler():
         return
 
     scheduler = AsyncIOScheduler(timezone=settings.batch.timezone)
+    logger.info(f"Initializing scheduler with timezone: {settings.batch.timezone}")
+
+    # Add daily feedback job (최우선)
+    if settings.batch.daily_feedback.enabled:
+        scheduler.add_job(
+            scheduled_daily_feedback,
+            CronTrigger(
+                hour=settings.batch.daily_feedback.hour,
+                minute=settings.batch.daily_feedback.minute,
+                timezone=settings.batch.timezone
+            ),
+            id="daily_feedback",
+            name="Daily AI Feedback Generation",
+            replace_existing=True
+        )
+        logger.info(f"Daily feedback scheduled for: {settings.batch.daily_feedback.hour:02d}:{settings.batch.daily_feedback.minute:02d} {settings.batch.timezone}")
 
     # Add daily analysis job
-    daily_hour = settings.batch.schedule.get("hour", 0)
-    daily_minute = settings.batch.schedule.get("minute", 0)
+    if settings.batch.daily_analysis.enabled:
+        scheduler.add_job(
+            scheduled_daily_analysis,
+            CronTrigger(
+                hour=settings.batch.daily_analysis.hour,
+                minute=settings.batch.daily_analysis.minute,
+                timezone=settings.batch.timezone
+            ),
+            id="daily_analysis",
+            name="Daily Analysis Job",
+            replace_existing=True
+        )
+        logger.info(f"Daily analysis scheduled for: {settings.batch.daily_analysis.hour:02d}:{settings.batch.daily_analysis.minute:02d}")
 
-    scheduler.add_job(
-        scheduled_daily_analysis,
-        CronTrigger(hour=daily_hour, minute=daily_minute),
-        id="daily_analysis",
-        name="Daily Analysis Job",
-        replace_existing=True
-    )
+    # Add weekly report job
+    if settings.batch.weekly_report.enabled:
+        scheduler.add_job(
+            scheduled_weekly_report,
+            CronTrigger(
+                day_of_week=settings.batch.weekly_report.day_of_week,
+                hour=settings.batch.weekly_report.hour,
+                minute=settings.batch.weekly_report.minute,
+                timezone=settings.batch.timezone
+            ),
+            id="weekly_report",
+            name="Weekly Report Job",
+            replace_existing=True
+        )
+        logger.info(f"Weekly report scheduled for: day_of_week={settings.batch.weekly_report.day_of_week} {settings.batch.weekly_report.hour:02d}:{settings.batch.weekly_report.minute:02d}")
 
-    # Add weekly report job (every Sunday at 1 AM)
-    scheduler.add_job(
-        scheduled_weekly_report,
-        CronTrigger(day_of_week=6, hour=1, minute=0),  # Sunday = 6
-        id="weekly_report",
-        name="Weekly Report Job",
-        replace_existing=True
-    )
-
-    # Add monthly summary job (1st day of month at 2 AM)
-    scheduler.add_job(
-        scheduled_monthly_summary,
-        CronTrigger(day=1, hour=2, minute=0),
-        id="monthly_summary",
-        name="Monthly Summary Job",
-        replace_existing=True
-    )
+    # Add monthly summary job
+    if settings.batch.monthly_summary.enabled:
+        scheduler.add_job(
+            scheduled_monthly_summary,
+            CronTrigger(
+                day=settings.batch.monthly_summary.day,
+                hour=settings.batch.monthly_summary.hour,
+                minute=settings.batch.monthly_summary.minute,
+                timezone=settings.batch.timezone
+            ),
+            id="monthly_summary",
+            name="Monthly Summary Job",
+            replace_existing=True
+        )
+        logger.info(f"Monthly summary scheduled for: day={settings.batch.monthly_summary.day} {settings.batch.monthly_summary.hour:02d}:{settings.batch.monthly_summary.minute:02d}")
 
     scheduler.start()
-    logger.info(f"Batch scheduler started with timezone: {settings.batch.timezone}")
-    logger.info(f"Daily analysis scheduled for: {daily_hour:02d}:{daily_minute:02d}")
-    logger.info("Weekly report scheduled for: Sunday 01:00")
-    logger.info("Monthly summary scheduled for: 1st day of month 02:00")
+    logger.info("Batch scheduler started successfully")
 
 
 def stop_scheduler():
@@ -146,7 +166,9 @@ def add_one_time_job(job_type: str, delay_seconds: int = 0):
     if scheduler is None:
         raise RuntimeError("Scheduler is not running")
 
-    if job_type == "daily_analysis":
+    if job_type == "daily_feedback":
+        job_func = scheduled_daily_feedback
+    elif job_type == "daily_analysis":
         job_func = scheduled_daily_analysis
     elif job_type == "weekly_report":
         job_func = scheduled_weekly_report

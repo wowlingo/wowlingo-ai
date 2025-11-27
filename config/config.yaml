@@ -11,10 +11,32 @@ ollama:
     timeout: 30
 
 batch:
-    schedule:
+    # 기본 타임존 설정 (한국 시간)
+    timezone: Asia/Seoul
+    
+    # 데일리 AI 피드백 생성 (매일 오후 10시)
+    daily_feedback:
+        enabled: true
+        hour: 22
+        minute: 0
+    
+    # 기존 분석 작업들 (필요시 활성화)
+    daily_analysis:
+        enabled: false
         hour: 0
         minute: 0
-    timezone: Asia/Seoul
+    
+    weekly_report:
+        enabled: false
+        day_of_week: 6  # 0=Monday, 6=Sunday
+        hour: 1
+        minute: 0
+    
+    monthly_summary:
+        enabled: false
+        day: 1  # 매월 1일
+        hour: 2
+        minute: 0
 
 logging:
     level: INFO

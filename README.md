@@ -4,18 +4,19 @@
 
 ## 주요 기능
 
-- 🎯 **일일 학습 피드백**: 매일 학습 12시간 후 자동으로 피드백 생성
-- 👶 **아동 친화적**: 7세 이하 아동이 이해할 수 있는 쉬운 표현
-- 🌱 **성장 추적**: 스테이지 진행도 기반 성장 단계 (씨앗→새싹→성장한 식물→열매)
-- 📊 **카테고리별 분석**: hashtag 기반 가장 잘한 영역 파악
-- 🤖 **AI 기반**: Ollama + Gemma 모델을 활용한 다양한 피드백 생성
+- 🎯 **자동 일일 피드백**: 매일 오후 10시(설정 가능) 자동으로 모든 사용자 피드백 생성
+- 🕐 **스케줄러 내장**: APScheduler로 배치 작업 자동 실행
+- 🌏 **타임존 지원**: Asia/Seoul 등 원하는 타임존 설정 가능
+- 📊 **배치 처리**: 병렬 처리로 대량 사용자 효율적 처리
+- 🤖 **AI 기반**: Ollama + Gemma 모델을 활용한 개인화 피드백
+- 🔧 **Config 기반**: YAML 파일로 스케줄 관리
 
 ## 기술 스택
 
 - **Backend**: FastAPI, Python 3.11, SQLAlchemy
-- **Database**: MySQL (실제 Wowlingo DB 연결)
+- **Database**: PostgreSQL (실제 Wowlingo DB 연결)
 - **AI Engine**: Ollama + Gemma 모델
-- **Scheduler**: APScheduler (선택사항)
+- **Scheduler**: APScheduler (자동 실행)
 
 ## 프로젝트 구조
 
@@ -23,13 +24,16 @@
 wowlingo-ai/
 ├── app/
 │   ├── common/              # 공통 모듈 (config, database, logging)
-│   ├── core/                # 핵심 로직 (scheduler)
+│   ├── core/                # 핵심 로직
+│   │   ├── scheduler.py    # 스케줄러 관리
+│   │   └── feedback_generator.py  # 배치 피드백 생성
 │   ├── models/              # 데이터베이스 모델
 │   │   └── wowlingo_models.py  # 실제 Wowlingo DB 스키마
 │   ├── routers/             # API 엔드포인트
-│   │   └── feedback.py      # 피드백 API
+│   │   ├── feedback.py      # 피드백 API
+│   │   └── batch.py         # 배치 관리 API
 │   ├── services/            # 외부 서비스
-│   │   ├── feedback.py      # 피드백 생성 로직
+│   │   ├── feedback.py      # 개별 피드백 생성
 │   │   └── ollama.py        # Ollama 클라이언트
 │   └── main.py              # FastAPI 애플리케이션
 ├── config/
@@ -62,6 +66,10 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 # 의존성 설치
 pip install -r requirements.txt
 ```
+
+### ⚠️ 중요: 스케줄러 자동 실행
+**서버를 시작하면 스케줄러가 자동으로 실행됩니다.**
+별도의 배치 프로세스를 실행할 필요가 없습니다.
 
 ### 3. 환경 설정
 
@@ -99,7 +107,7 @@ ollama serve
 ### 5. 애플리케이션 실행
 
 ```bash
-# 개발 모드
+# 개발 모드 (스케줄러 자동 시작)
 python app/main.py
 
 # 또는 uvicorn 직접 실행
@@ -107,6 +115,11 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 애플리케이션이 `http://localhost:8000`에서 실행됩니다.
+
+**🔄 스케줄러 자동 실행:**
+- 서버 시작 시 스케줄러가 자동으로 백그라운드에서 실행
+- 설정된 시간에 자동으로 배치 작업 수행
+- 서버 종료 시 스케줄러도 함께 종료
 
 ## API 사용법
 
@@ -116,7 +129,55 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ### 주요 API 엔드포인트
 
-#### 1. 일일 피드백 생성
+#### 1. 수동 배치 실행 (테스트용)
+
+```bash
+POST /api/batch/trigger/daily_feedback
+```
+
+**응답 예시:**
+```json
+{
+  "message": "Batch job daily_feedback completed successfully",
+  "result": {
+    "job_type": "daily_feedback",
+    "date": "2025-01-27",
+    "total_users": 150,
+    "processed_count": 148,
+    "error_count": 2
+  }
+}
+```
+
+#### 2. 스케줄러 상태 확인
+
+```bash
+GET /api/batch/scheduler/status
+```
+
+**응답 예시:**
+```json
+{
+  "status": "running",
+  "timezone": "Asia/Seoul",
+  "jobs": [
+    {
+      "id": "daily_feedback",
+      "name": "Daily AI Feedback Generation",
+      "next_run": "2025-01-27T22:00:00+09:00",
+      "trigger": "cron[hour='22', minute='0']"
+    }
+  ]
+}
+```
+
+#### 3. 최근 생성된 피드백 조회
+
+```bash
+GET /api/batch/feedbacks/recent?limit=10
+```
+
+#### 4. 개별 사용자 피드백 생성 (기존 API)
 
 ```bash
 POST /api/feedback/generate
@@ -138,13 +199,13 @@ Content-Type: application/json
 }
 ```
 
-#### 2. 최신 피드백 조회
+#### 5. 최신 피드백 조회
 
 ```bash
 GET /api/feedback/user/{user_id}/latest
 ```
 
-#### 3. 특정 날짜 피드백 조회
+#### 6. 특정 날짜 피드백 조회
 
 ```bash
 GET /api/feedback/user/{user_id}/date/2025-01-15
@@ -199,14 +260,40 @@ GET /api/feedback/user/{user_id}/date/2025-01-15
 ```yaml
 database:
   # .env 파일에서 환경 변수로 덮어씌워짐
-  host: localhost
-  port: 3306
+  host: ${DATABASE_HOST}
+  port: ${DATABASE_PORT}
+  database: ${DATABASE_NAME}
+  username: ${DATABASE_USERNAME}
+  password: ${DATABASE_PASSWORD}
 
 ollama:
   base_url: http://localhost:11434
   model: gemma
   timeout: 30
+
+batch:
+  # 기본 타임존 설정 (한국 시간)
+  timezone: Asia/Seoul
+  
+  # 데일리 AI 피드백 생성 (매일 오후 10시)
+  daily_feedback:
+    enabled: true
+    hour: 22
+    minute: 0
+  
+  # 기존 분석 작업들 (필요시 활성화)
+  daily_analysis:
+    enabled: false
+    hour: 0
+    minute: 0
 ```
+
+### 스케줄러 설정 변경
+
+1. **시간 변경**: `config/config.yaml`의 `hour`, `minute` 수정
+2. **타임존 변경**: `timezone` 값 변경 (예: `America/New_York`)
+3. **잡 활성화/비활성화**: `enabled: true/false` 설정
+4. **서버 재시작**: 변경사항 적용을 위해 서버 재시작 필요
 
 ### config/prompts.yaml
 AI 프롬프트 템플릿을 관리합니다. 코드 수정 없이 프롬프트만 변경하여 피드백 스타일 조정 가능.
@@ -287,12 +374,44 @@ cat .env
 tail -f logs/app.log
 ```
 
+## 배치 처리 및 스케줄링
+
+### 자동 실행되는 작업
+
+1. **일일 AI 피드백 생성** (daily_feedback)
+   - 실행 시간: 매일 오후 10시 (설정 가능)
+   - 대상: 당일 학습한 모든 사용자
+   - 저장 위치: `ai_feedbacks` 테이블
+   - 병렬 처리: 50명씩 배치 처리
+
+### 배치 처리 특징
+
+- **자동 재시도**: 실패한 사용자는 로그에 기록
+- **병렬 처리**: `asyncio.gather()`로 성능 최적화
+- **메모리 효율**: 청크 단위 처리 (기본 50명)
+- **타임존 인식**: KST ↔ UTC 자동 변환
+
+### 모니터링
+
+```bash
+# 서버 로그 확인
+tail -f logs/app.log
+
+# 스케줄러 상태 API
+curl http://localhost:8000/api/batch/scheduler/status
+
+# 최근 생성된 피드백 확인
+curl http://localhost:8000/api/batch/feedbacks/recent
+```
+
 ## 향후 개선 사항
 
-- [ ] **learning_progress_analysis**: 시간에 따른 학습 진도 분석 (데이터 충분 ✅)
-- [ ] **personalized_recommendations**: 개인화된 학습 추천 (제한적 데이터 ⚠️)
-- [ ] **자동 스케줄링**: 학습 12시간 후 자동 피드백 생성
-- [ ] **다국어 지원**: 영어/일본어 피드백
+- [x] **자동 스케줄링**: ✅ APScheduler로 구현 완료
+- [x] **배치 처리**: ✅ 병렬 처리로 대량 사용자 지원
+- [x] **Config 기반 설정**: ✅ YAML로 스케줄 관리
+- [ ] **Redis 큐**: 대규모 확장 시 도입 검토
+- [ ] **모니터링 대시보드**: Grafana 연동
+- [ ] **알림 시스템**: Slack/이메일 연동
 
 ## 라이센스
 

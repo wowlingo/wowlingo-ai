@@ -9,10 +9,9 @@ import uvicorn
 from app.common.config import settings
 from app.common.database import get_db, create_tables
 from app.common.logging import setup_logging, get_logger
-# Disabled routers and scheduler that depend on models.py
-# from app.routers import users, analysis, batch
-# from app.core.scheduler import start_scheduler
 from app.routers import feedback
+from app.routers import batch
+from app.core.scheduler import start_scheduler, stop_scheduler
 
 # Setup logging first
 setup_logging()
@@ -33,11 +32,8 @@ app.mount("/static", StaticFiles(directory=settings.paths.static), name="static"
 templates = Jinja2Templates(directory=settings.paths.templates)
 
 # Include routers
-# Disabled routers that depend on models.py
-# app.include_router(users.router, prefix="/api/users", tags=["users"])
-# app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
-# app.include_router(batch.router, prefix="/api/batch", tags=["batch"])
 app.include_router(feedback.router, prefix="/api/feedback", tags=["feedback"])
+app.include_router(batch.router, prefix="/api/batch", tags=["batch"])
 
 
 @app.on_event("startup")
@@ -55,19 +51,26 @@ async def startup_event():
     logger.info("Using existing wowlingo database tables")
 
     # Start batch scheduler
-    # Disabled: depends on models.py
-    # try:
-    #     start_scheduler()
-    #     logger.info("Batch scheduler started successfully")
-    # except Exception as e:
-    #     logger.error(f"Failed to start batch scheduler: {e}")
-    logger.info("Batch scheduler disabled")
+    try:
+        start_scheduler()
+        logger.info("Batch scheduler started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start batch scheduler: {e}")
+        # 스케줄러 실패해도 서버는 계속 실행
+        logger.warning("Server will continue without scheduler")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Application shutdown event"""
     logger.info("Shutting down Onsori WOW Analysis System")
+    
+    # Stop scheduler gracefully
+    try:
+        stop_scheduler()
+        logger.info("Scheduler stopped successfully")
+    except Exception as e:
+        logger.error(f"Error stopping scheduler: {e}")
 
 
 @app.get("/", response_class=HTMLResponse)
